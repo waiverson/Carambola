@@ -1,7 +1,6 @@
 package com.github.waiverson.carambola.support;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
