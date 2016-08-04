@@ -2,6 +2,7 @@ package com.github.waiverson.carambola;
 
 import com.github.waiverson.carambola.support.Config;
 import com.github.waiverson.carambola.Carambola.Runner;
+import com.github.waiverson.carambola.support.*;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpURL;

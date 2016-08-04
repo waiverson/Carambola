@@ -62,7 +62,7 @@ public class Tools {
      *            some text enclosed in some html tag.
      * @return the text within the tag.
      */
-    private static String fromSimpleTag(String somethingWithinATag) {
+    public static String fromSimpleTag(String somethingWithinATag) {
         return somethingWithinATag.replaceAll("<[^>]+>", "").replace("<[^>]+>", "");
     }
 
@@ -82,6 +82,16 @@ public class Tools {
             str = str.substring(0, str.length() - 2);
         }
         return str;
+    }
+
+    public static String fromHtml(String text) {
+        String ls = "\n";
+        return text.replaceAll("<br[\\s]*/>", ls).replaceAll("<BR[\\s]*/>", ls)
+                .replaceAll("<span[^>]*>", "").replaceAll("</span>", "")
+                .replaceAll("<pre>", "").replaceAll("</pre>", "")
+                .replaceAll("&nbsp;", " ").replaceAll("&gt;", ">")
+                .replaceAll("&amp;", "&").replaceAll("&lt;", "<")
+                .replaceAll("&nbsp;", " ");
     }
 
 }
