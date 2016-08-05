@@ -29,6 +29,32 @@ public class Url {
         }
     }
 
+    public URL getUrl() {
+        return baseUrl;
+    }
+
+    public String getBaseUrl() {
+        String path = getResource().trim();
+        if (path.length() == 0 || path.equals("/")) {
+            return toString();
+        }
+        int index = toString().indexOf(getResource());
+        if (index >= 0) {
+            return toString().substring(0, index);
+        } else {
+            throw new IllegalStateException("Invalid URL");
+        }
+    }
+
+    public String getResource() {
+        String res = getUrl().getPath().trim();
+        if (res.isEmpty()) {
+            return "/";
+        }
+        return res;
+    }
+
+
 
 
 }
