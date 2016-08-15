@@ -6,10 +6,60 @@ package com.github.waiverson.carambola.support;
 public interface CellFormatter<E> {
 
     void exception(CellWrapper<E> cellWrapper, Throwable exception);
+
     void exception(CellWrapper<E> cellWrapper, String exceptionMessage);
+
     void check(CellWrapper<E> valueCell, RestDataTypeAdapter adapter);
+
     String label(String string);
+
     void setDisplayActual(boolean displayActual);
+
     void setDisplayAbsoluteURLInFull(boolean displayAbsoluteURLInFull);
+
     void setMinLengthForToggleCollapse(int minLength);
+
+    /**
+     * formats a cell representing a wrong expectation.
+     *
+     * @param expected
+     *            the expected value
+     * @param typeAdapter
+     *            the adapter with the actual value.
+     */
+    void wrong(CellWrapper<E> expected, RestDataTypeAdapter typeAdapter);
+
+    /**
+     * formats a cell representing a right expectation.
+     *
+     * @param expected
+     *            the expected value
+     * @param typeAdapter
+     *            the adapter with the actual value.
+     */
+    void right(CellWrapper<E> expected, RestDataTypeAdapter typeAdapter);
+
+    /**
+     * formats a cell with a gray background. used to ignore the content or for
+     * comments.
+     *
+     * @param string
+     *            the content
+     * @return the content grayed out.
+     */
+    String gray(String string);
+
+    /**
+     * formats the content as a hyperlink.
+     *
+     * @param cell
+     *            the cell.
+     * @param resolvedUrl
+     * 	          the cell content after symbols' substitution.
+     * @param link
+     *            the uri in the href.
+     * @param text
+     *            the text.
+     */
+    void asLink(CellWrapper<E> cell, String resolvedUrl, String link, String text);
 }

@@ -5,6 +5,7 @@ import com.github.waiverson.carambola.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import smartrics.rest.client.RestClient;
+import smartrics.rest.client.RestData.Header;
 import smartrics.rest.client.RestRequest;
 import smartrics.rest.client.RestResponse;
 
@@ -125,7 +126,9 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
 
     public void setBaseUrl(Url url) {this.baseUrl = url; }
 
-    public CellFormatter<?> getFormatter() {return formatter;}
+    public CellFormatter<?> getFormatter() {
+        return formatter;
+    }
 
 
     private String stripTag(String somewthingwithinATag) {
@@ -492,6 +495,74 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
 
     }
 
+    protected void completeHttpMethodExecution() {
+        String uri = getLastResponse().getResource();
+        String query = getLastRequest().getQuery();
+        if(query != null && !"".equals(query.trim())) {
+            uri = uri + "?" + query;
+        }
+        String clientBaseUri = restClient.getBaseUrl();
+        String u = clientBaseUri + uri;
+        CellWrapper uriCell = row.getCell(1);
+        getFormatter().asLink(uriCell, GLOBALS.substitute(uriCell.body()), u, uri);
+        CellWrapper cellStatusCode = row.getCell(2);
+        if (cellStatusCode == null) {
+            throw new IllegalArgumentException("you must specify a status code cell");
+        }
+        Integer lastStatusCode = getLastResponse().getStatusCode();
+        process(cellStatusCode, lastStatusCode.toString(), new StatusCodeTypeAdapter());
+        List<Header> lastHeaders = getLastResponse().getHeaders();
+        process(row.getCell(3), lastHeaders, new HeadersTypeAdapter());
+        CellWrapper bodyCell = row.getCell(4);
+        if (bodyCell == null) {
+            throw new IllegalArgumentException("you must specify a body cell");
+        }
+        bodyCell.body(GLOBALS.substitute(bodyCell.body()));
+        BodyTypeAdapter bodyTypeAdapter = createBodyTypeAdapter();
+        process(bodyCell, getLastResponse().getBody(), bodyTypeAdapter);
+    }
+
+    private void process(CellWrapper expected, Object actual, RestDataTypeAdapter ta){
+        if (expected == null) {
+           throw new IllegalArgumentException("you must specify a headers cell");
+        }
+        ta.set(actual);
+        boolean ignore = "".equals(expected.text().trim());
+        if (ignore){
+            String actualString = ta.toString();
+            if (!"".equals(actualString)) {
+                expected.addToBody(getFormatter().gray(actualString));
+            }
+        }
+        else {
+            boolean success = false;
+            try {
+                String substitue = GLOBALS.substitute(Tools.fromHtml(expected.text()));
+                Object parse = ta.parse(substitue);
+                success = ta.equals(parse, actual);
+            } catch (Exception e) {
+                getFormatter().exception(expected, e);
+                return;
+            }
+            if (success) {
+                getFormatter().right(expected, ta);
+            } else {
+                getFormatter().wrong(expected, ta);
+            }
+        }
+    }
+
+    protected BodyTypeAdapter createBodyTypeAdapter() {
+        return createBodyTypeAdapter(ContentType.parse(getLastResponse().getContentType()));
+    }
+
+    protected BodyTypeAdapter createBodyTypeAdapter(ContentType ct) {
+        String charset = getLastResponse().getCharset();
+        BodyTypeAdapter bodyTypeAdapter = partsFactory.buildBodyTypeAdapter(ct, charset);
+        bodyTypeAdapter.setContext(namespaceContext);
+        return bodyTypeAdapter;
+    }
+
     private Map<String, String> subsititute(Map<String, String> headers) {
         Map<String,  String> sub = new HashMap<String, String>();
         for (Map.Entry<String, String> e : headers.entrySet()) {
@@ -528,7 +599,7 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
     protected String emptifyBody(String b) {
         String body = b;
         if (body == null) {
-            body = ""
+            body = "";
         }
         return body;
     }
