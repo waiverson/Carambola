@@ -199,6 +199,15 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
         restClient = partsFactory.buildRestClient(config);
     }
 
+    private void renderReplacement(CellWrapper cell, String actual) {
+        StringTypeAdapter adapter = new StringTypeAdapter();
+        adapter.set(actual);
+        if (!adapter.equals(actual, cell.body())) {
+            cell.body(actual);
+            getFormatter().right(cell, adapter);
+        }
+    }
+
     protected void notifyInvaildState(boolean state) {
         if (!state) {
             throw new RuntimeException(
@@ -294,11 +303,7 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
         return Tools.fromHtml(someHtml);
     }
 
-    public void PUT() {
-        debugMethodCallStart();
-        doMethod(emptifyBody(requestBody), "Put");
-        debugMethodCallEnd();
-    }
+
 
     /**
      * Allows setting of the name of the file to upload.
@@ -403,6 +408,12 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
     public void HEAD() {
         debugMethodCallStart();
         doMethod("Head");
+        debugMethodCallEnd();
+    }
+
+    public void PUT() {
+        debugMethodCallStart();
+        doMethod(emptifyBody(requestBody), "Put");
         debugMethodCallEnd();
     }
 

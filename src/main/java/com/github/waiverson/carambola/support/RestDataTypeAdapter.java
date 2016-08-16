@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Created by waiverson on 2016/8/15.
@@ -52,6 +53,23 @@ public abstract class RestDataTypeAdapter {
         } catch (Exception e) {
             throw new RuntimeException("unable to parse as" + this.getClass().getName() + ": " + o);
         }
+    }
+
+    public Object parse(String s) throws Exception {
+        Object obj = "null".equalsIgnoreCase(s)?null:("blank".equalsIgnoreCase(s)?"":s);
+        return obj;
+    }
+
+    public boolean equals(Object a, Object b) {
+        boolean isEqual = false;
+        if (a == null) {
+            isEqual = b == null;
+        } else if (b != null) {
+            isEqual = Pattern.matches(a.toString(), b.toString());
+        } else {
+            isEqual = a.equals(b);
+        }
+        return  isEqual;
     }
 
 }

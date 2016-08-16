@@ -2,6 +2,8 @@ package com.github.waiverson.carambola.support;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Created by waiverson on 2016/8/2.
@@ -92,6 +94,16 @@ public class Tools {
                 .replaceAll("&nbsp;", " ").replaceAll("&gt;", ">")
                 .replaceAll("&amp;", "&").replaceAll("&lt;", "<")
                 .replaceAll("&nbsp;", " ");
+    }
+
+    public static boolean regex(String text, String expr) {
+        try {
+            Pattern p = Pattern.compile(expr);
+            boolean find = p.matcher(text).find();
+            return find;
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException("Invaild regex " +expr);
+        }
     }
 
 }
