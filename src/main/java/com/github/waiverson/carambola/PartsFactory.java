@@ -18,10 +18,10 @@ import smartrics.rest.client.RestResponse;
  * Created by waiverson on 2016/8/3.
  */
 public class PartsFactory {
-    private final BobyTypeAdapterFactory bobyTypeAdapterFactory;
+    private final BodyTypeAdapterFactory bodyTypeAdapterFactory;
 
     public PartsFactory(final RunnerVariablesProvider variablesProvider) {
-        this.bobyTypeAdapterFactory = new BobyTypeAdapterFactory(variablesProvider);
+        this.bodyTypeAdapterFactory = new BodyTypeAdapterFactory(variablesProvider);
     }
 
     public RestClient buildRestClient(final Config config) {
@@ -65,13 +65,14 @@ public class PartsFactory {
             return new DslFormatter();
         }
         if (Runner.TABLE.equals(runner)) {
-            return new TableFormatter();
+            //return new TableFormatter();
+            // to do for new formatter
         }
         throw new IllegalArgumentException("Runner " + runner.name() + "not supported");
     }
 
     public BodyTypeAdapter buildBodyTypeAdapter(ContentType ct, String charset) {
-        return bobyTypeAdapterFactory.getBodyTypeAdapter(ct, charset);
+        return bodyTypeAdapterFactory.getBodyTypeAdapter(ct, charset);
     }
 
 
