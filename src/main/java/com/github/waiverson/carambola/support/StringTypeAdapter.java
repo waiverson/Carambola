@@ -11,6 +11,7 @@ public class StringTypeAdapter extends RestDataTypeAdapter {
         if (expected != null) {
             se = expected.toString();
         }
+        String sa = "null";
         if (actual != null) {
             sa = actual.toString();
         }

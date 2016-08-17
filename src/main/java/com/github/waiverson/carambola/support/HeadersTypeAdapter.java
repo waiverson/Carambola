@@ -54,7 +54,7 @@ public class HeadersTypeAdapter extends RestDataTypeAdapter {
                     String[] nvpEl = nvp.split(":", 2);
                     expected.add(new Header(nvpEl[0].trim(), nvpEl[1].trim()));
                 } catch (RuntimeException e) {
-                    throw new IllegalArgumentException("Each entry in the must be separated by \\n and each entry must be expressed as a name:value")
+                    throw new IllegalArgumentException("Each entry in the must be separated by \\n and each entry must be expressed as a name:value");
                 }
             }
         }

@@ -62,4 +62,18 @@ public interface CellFormatter<E> {
      *            the text.
      */
     void asLink(CellWrapper<E> cell, String resolvedUrl, String link, String text);
+
+    /**
+     * @return true if actual values are rendered.
+     */
+    boolean isDisplayActual();
+
+    /**
+     * in SLIM cell content is HTML escaped - we abstract this method to
+     * delegate to formatter the cleaning of the content.
+     *
+     * @param text the text
+     * @return the cleaned text
+     */
+    String fromRaw(String text);
 }

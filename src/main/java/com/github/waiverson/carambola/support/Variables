@@ -44,7 +44,7 @@ public abstract class Variables{
         for (Map.Entry<String, String> en : repalcements.entrySet()) {
             String k = en.getKey();
             String replacement = repalcements.get(k);
-            if (repalcement != null) {
+            if (replacement != null) {
                 String sanitisedReplacement = SPECIAL_REGEX_CHARS.matcher(replacement).replaceAll("\\\\$0");
                 newText = newText.replaceAll(k, sanitisedReplacement);
             }
