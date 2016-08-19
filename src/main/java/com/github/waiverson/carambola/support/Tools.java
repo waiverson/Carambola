@@ -1,5 +1,21 @@
 package com.github.waiverson.carambola.support;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -258,4 +274,72 @@ public class Tools {
     public static String toHtmlLink(String href, String text) {
         return "<a href=" + href + ">" + text + "</a>";
     }
+
+    /**
+     * extract the XPath from the content. the return value type is passed in
+     * input using one of the {@link XPathConstants}. See also
+     * {@link XPathExpression#evaluate(Object item, QName returnType)} ;
+     *
+     * @param ns
+     * @param xpathExpression
+     * @param content
+     * @param returnType
+     * @param charset
+     * @return the result
+     */
+    public static Object extractXPath(Map<String, String> ns, String xpathExpression, String content,
+                                      QName returnType, String charset) {
+        if (null == ns) {
+            ns = new HashMap<String, String>();
+        }
+        String ch = charset;
+        if (ch == null) {
+            ch = Charset.defaultCharset().name();
+        }
+        Document doc = toDocument(content, charset);
+        XPathExpression expr = toExpression(ns, xpathExpression);
+        try {
+            Object o = expr.evaluate(doc, returnType);
+            return o;
+        } catch (XPathExpressionException e) {
+            throw new IllegalArgumentException("xPath expression cannot be executed: "
+                    + xpathExpression);
+        }
+    }
+
+    private static Document toDocument(String content, String charset) {
+        String ch = charset;
+        if (ch == null) {
+            ch = Charset.defaultCharset().name();
+        }
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        try {
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(getInputStreamFromString(content, ch));
+            return doc;
+        } catch (ParserConfigurationException e) {
+            throw new IllegalArgumentException(
+                    "parser for last response body caused an error", e);
+        } catch (SAXException e) {
+            throw new IllegalArgumentException(
+                    "last response body cannot be parsed", e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    "IO Exception when reading the document", e);
+        }
+    }
+
+    public static InputStream getInputStreamFromString(String string, String encoding) {
+        if (string == null) {
+            throw new IllegalArgumentException("null input");
+        }
+        try {
+            byte[] byteArray = string.getBytes(encoding);
+            return new ByteArrayInputStream(byteArray);
+        }catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("unsupported encoding: " + encoding);
+        }
+    }
+
 }

@@ -4,6 +4,7 @@ import com.github.waiverson.carambola.RunnerVariablesProvider;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by waiverson on 2016/8/17.
@@ -34,7 +35,7 @@ public class BodyTypeAdapterFactory {
             public BodyTypeAdapter createBodyTypeAdapter() {
                 return new TextBodyTypeAdapter();
             }
-        });;
+        });
     }
 
     public BodyTypeAdapterFactory(final RunnerVariablesProvider variablesProvider) {
