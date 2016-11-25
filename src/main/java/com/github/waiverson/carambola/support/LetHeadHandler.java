@@ -6,6 +6,8 @@ import smartrics.rest.client.RestResponse;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by waiverson on 16/11/25.
@@ -13,8 +15,7 @@ import java.util.List;
 
 public class LetHeadHandler implements LetHandler {
 
-	@Override
-	public String handler(RunnerVariablesProvider variablesProvider,
+	public String handle(RunnerVariablesProvider variablesProvider,
 						  RestResponse response, Object expressionContext, String expression) {
 		List<String> content = new ArrayList<String>();
 		if (response != null) {
@@ -24,8 +25,20 @@ public class LetHeadHandler implements LetHandler {
 			}
 		}
 
+		String value = null;
+		if (content.size() > 0) {
+			Pattern p = Pattern.compile(expression);
+			for (String c : content) {
+				Matcher m = p.matcher(c);
+				if ( m.find()) {
+					int cc = m.groupCount();
+					value = m.group(cc);
+					break;
+				}
+			}
+		}
 
-
+		return value;
 	}
 
 }

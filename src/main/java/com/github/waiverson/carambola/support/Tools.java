@@ -8,6 +8,7 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.soap.Node;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
@@ -278,6 +279,12 @@ public class Tools {
     public static String toHtmlLink(String href, String text) {
         return "<a href=" + href + ">" + text + "</a>";
     }
+
+
+    public static NodeList extractXPath(Map<String, String> ns, String xpathExpression, String content) {
+        return (NodeList)extractXpath(ns, xpathExpression, content, XPathConstants.NODESET, null);
+    }
+
 
     /**
      * extract the XPath from the content. the return value type is passed in
