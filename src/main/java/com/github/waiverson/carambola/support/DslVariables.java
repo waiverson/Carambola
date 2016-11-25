@@ -3,7 +3,7 @@ package com.github.waiverson.carambola.support;
 import com.github.waiverson.carambola.StatementExecutorInterface;
 
 /**
- * Created by waiverson on 2016/8/3.
+ * Created by xyc on 2016/8/3.
  */
 
 public class DslVariables extends Variables{
@@ -12,7 +12,7 @@ public class DslVariables extends Variables{
 
     /**
      * initialises the variables. reade
-     * {@code carambola.null.value.representation} to know how to render
+     * {@code Carambola.null.value.representation} to know how to render
      * {@code null}s.
      *
      * @param c

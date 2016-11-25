@@ -31,6 +31,10 @@ public class Tools {
     private Tools() {}
 
 
+    public static String convertEntryToString(String name, String value, String nvSep) {
+        return String.format("%s%s%s", name, nvSep,value);
+    }
+
     public static Map<String, String> convertStringToMap(final String expStr,
                                                          final String nvSep, final String entrySep, boolean cleanTags) {
         String sanitisedExpStr = expStr.trim();

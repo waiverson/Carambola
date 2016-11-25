@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * type adapter for body cells with xml content
- * Created by waiverson on 2016/8/19.
+ * Created by xyc on 2016/8/19.
  */
 public class XPathBodyTypeAdapter extends BodyTypeAdapter {
 

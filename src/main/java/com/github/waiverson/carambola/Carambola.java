@@ -1,6 +1,5 @@
 package com.github.waiverson.carambola;
 
-import com.github.waiverson.carambola.support.Config;
 import com.github.waiverson.carambola.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,11 +14,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.Callable;
 
 /**
- * Created by Administrator on 2016/8/3.
+ * Created by waiverson on 2016/8/3.
  */
+
+
 public class Carambola implements StatementExecutorConsumer, RunnerVariablesProvider{
 
     private Runner runner;
@@ -439,6 +439,39 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
         debugMethodCallStart();
         doMethod(emptifyBody(requestBody), "Post");
         debugMethodCallEnd();
+    }
+
+
+    /**
+     * dsl: | let | label | type | loc | expr |
+     * allows to associate a value to a label. values are extracted from the
+     * body of the last successful http response.
+     * example:
+     * <code> | let | id | body | /services/id[0]/text() | | <code/>
+     * <code> | GET | /services/%id% | 200 | | | <code/>
+     */
+    public void let() {
+        debugMethodCallStart();
+        if(row.size() != 5) {
+            getFormatter().exception(row.getCell(row.size() - 1), "Not all cells found: | let | label | type | expr | result |");
+            debugMethodCallEnd();
+            return;
+        }
+        String label = row.getCell(1).text().trim();
+        String loc = row.getCell(2).text();
+        CellWrapper exprCell = row.getCell(3);
+        try {
+            exprCell.body(GLOBALS.substitute(exprCell.body()));
+            String expr = exprCell.text();
+            CellWrapper valueCell = row.getCell(4);
+            String valueCellText = valueCell.body();
+            String valueCellTextReplaced = GLOBALS.substitute(valueCellText);
+            valueCell.body(valueCellTextReplaced);
+            String sValue = null;
+            LetHandler letHandler = LetHandlerFactory.getHandlerFor(loc);
+
+        }
+        catch ();
     }
 
 
