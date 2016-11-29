@@ -3,6 +3,8 @@ package com.github.waiverson.carambola.support;
 /**
  * Created by waiverson on 2016/8/16.
  */
+
+
 public class StatusCodeTypeAdapter extends RestDataTypeAdapter {
 
     public boolean equals(Object r1, Object r2) {

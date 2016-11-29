@@ -9,6 +9,8 @@ import smartrics.rest.client.RestResponse;
 /**
  * Created by waiverson on 16/11/25.
  */
+
+
 public class JavascriptWrapper {
 
 
@@ -56,4 +58,6 @@ public class JavascriptWrapper {
 	private void injectJson(Context cx, ScriptableObject scope, String json) {
 		evaluateExpression(cx, scope, "var " + JSON_OBJ_NAME + "=" + json);
 	}
+
+
 }

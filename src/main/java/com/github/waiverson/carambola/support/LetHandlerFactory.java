@@ -15,7 +15,7 @@ public class LetHandlerFactory {
 		strategies.put("header", new LetHeadHandler());
 		strategies.put("header", new LetBodyHandler());
 		strategies.put("header", new LetBodyXmlHandler());
-		strategies.put("header", new LetBodyJsHander());
+		strategies.put("header", new LetBodyJsHandler());
 		strategies.put("header", new LetBodyConstHandler());
 	}
 
