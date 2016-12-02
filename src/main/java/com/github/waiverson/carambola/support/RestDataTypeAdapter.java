@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 /**
  * Created by waiverson on 2016/8/15.
  */
+
+
 public abstract class RestDataTypeAdapter {
 
     private final List<String> errors = new ArrayList<String>();
