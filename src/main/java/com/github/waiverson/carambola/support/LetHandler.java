@@ -1,7 +1,7 @@
 package com.github.waiverson.carambola.support;
 
 import smartrics.rest.client.RestResponse;
-import com.github.waiverson.carambola.
+import com.github.waiverson.carambola.RunnerVariablesProvider;
 
 /**
  * Created by waiverson on 16/11/25.

@@ -13,10 +13,10 @@ public class LetHandlerFactory {
 
 	static {
 		strategies.put("header", new LetHeadHandler());
-		strategies.put("header", new LetBodyHandler());
-		strategies.put("header", new LetBodyXmlHandler());
-		strategies.put("header", new LetBodyJsHandler());
-		strategies.put("header", new LetBodyConstHandler());
+		strategies.put("body", new LetBodyHandler());
+		strategies.put("body.xml", new LetBodyXmlHandler());
+		strategies.put("js", new LetBodyJsHandler());
+		strategies.put("const", new LetBodyConstHandler());
 	}
 
 	private LetHandlerFactory () {
