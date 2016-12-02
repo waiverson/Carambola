@@ -20,7 +20,7 @@ import java.util.Vector;
  */
 
 
-public class Carambola implements StatementExecutorConsumer, RunnerVariablesProvider{
+public class Carambola implements RunnerVariablesProvider{
 
     private Runner runner;
 
@@ -68,6 +68,8 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
 
     private static final String LINE_SEPARATOR = "\n";
 
+    private static final String FILE = "file";
+
     protected String requestBody;
 
     protected String fileName = null;
@@ -82,15 +84,14 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
         OTHER;
     }
 
-    @Override
     public Variables createRunnerVariables() {
         switch (runner) {
             case DSL:
                 return new DslVariables(config, DslStatementExecutor);
             case TABLE:
-                return TableVariables(config);
+                return null;
             default:
-                return new DslVariables(config);
+                return new DslVariables(config, DslStatementExecutor);
         }
     }
 
@@ -443,7 +444,7 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
 
 
     /**
-     * dsl: | let | label | type | loc | expr |
+     * dsl: | let | label | type | expr | result |
      * allows to associate a value to a label. values are extracted from the
      * body of the last successful http response.
      * example:
@@ -458,7 +459,7 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
             return;
         }
         String label = row.getCell(1).text().trim();
-        String loc = row.getCell(2).text();
+        String type = row.getCell(2).text();
         CellWrapper exprCell = row.getCell(3);
         try {
             exprCell.body(GLOBALS.substitute(exprCell.body()));
@@ -468,10 +469,29 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
             String valueCellTextReplaced = GLOBALS.substitute(valueCellText);
             valueCell.body(valueCellTextReplaced);
             String sValue = null;
-            LetHandler letHandler = LetHandlerFactory.getHandlerFor(loc);
+            LetHandler letHandler = LetHandlerFactory.getHandlerFor(type);
+            if (letHandler !=null ) {
+                StringTypeAdapter adapter = new StringTypeAdapter();
+                try {
+                    sValue = letHandler.handle(this, getLastResponse(), namespaceContext, expr);
+                    exprCell.body(getFormatter().gray(exprCell.body()));
+                } catch (RuntimeException e) {
+                    getFormatter().exception(exprCell, e.getMessage());
+                    LOG.error("Exception occurred when processing cell=" + exprCell, e);
+                }
+                GLOBALS.put(label, sValue);
+                adapter.set(sValue);
+                getFormatter().check(valueCell, adapter);
+            } else {
+                getFormatter().exception(exprCell, "i don't know how to process the expression for '" + type + "'");
+            }
 
         }
-        catch ();
+        catch (RuntimeException e) {
+            getFormatter().exception(exprCell, e);
+        } finally {
+            debugMethodCallEnd();
+        }
     }
 
 
