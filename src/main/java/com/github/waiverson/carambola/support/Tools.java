@@ -379,7 +379,7 @@ public class Tools {
                 }
                 return null;
             }
-            
+
             @Override
             public Iterator<?> getPrefixes(String namespaceURI) {return null;}
         };

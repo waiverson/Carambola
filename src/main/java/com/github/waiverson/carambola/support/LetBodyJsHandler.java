@@ -13,5 +13,9 @@ public class LetBodyJsHandler implements LetHandler {
 								RestResponse response, Object expressionContext, String expression) {
 		JavascriptWrapper js = new JavascriptWrapper(variablesProvider);
 		Object result  = js.evaluateExpression(response, expression);
+		if (result == null) {
+			return null;
+		}
+		return result.toString();
 	}
 }
