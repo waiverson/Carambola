@@ -5,7 +5,6 @@ package com.github.waiverson.carambola;
  */
 public interface InstructionExecutor {
     void assign(String var1, Object var2);
-
     void addPath(String var1);
 
     void create(String var1, String var2, Object... var3);

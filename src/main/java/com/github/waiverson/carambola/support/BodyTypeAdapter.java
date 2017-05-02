@@ -3,7 +3,7 @@ package com.github.waiverson.carambola.support;
 import java.util.Collection;
 
 /**
- * Created by waiverson 2016/8/16.
+ * Created by xyc 2016/8/16.
  */
 public abstract class BodyTypeAdapter extends RestDataTypeAdapter {
 

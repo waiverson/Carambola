@@ -1,6 +1,5 @@
 package com.github.waiverson.carambola;
 
-import com.github.waiverson.carambola.support.Config;
 import com.github.waiverson.carambola.support.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +14,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.Callable;
 
 /**
- * Created by Administrator on 2016/8/3.
+ * Created by waiverson on 2016/8/3.
  */
-public class Carambola implements StatementExecutorConsumer, RunnerVariablesProvider{
+
+
+public class Carambola implements RunnerVariablesProvider{
 
     private Runner runner;
 
@@ -68,6 +68,8 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
 
     private static final String LINE_SEPARATOR = "\n";
 
+    private static final String FILE = "file";
+
     protected String requestBody;
 
     protected String fileName = null;
@@ -82,15 +84,14 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
         OTHER;
     }
 
-    @Override
     public Variables createRunnerVariables() {
         switch (runner) {
             case DSL:
                 return new DslVariables(config, DslStatementExecutor);
             case TABLE:
-                return TableVariables(config);
+                return null;
             default:
-                return new DslVariables(config);
+                return new DslVariables(config, DslStatementExecutor);
         }
     }
 
@@ -439,6 +440,58 @@ public class Carambola implements StatementExecutorConsumer, RunnerVariablesProv
         debugMethodCallStart();
         doMethod(emptifyBody(requestBody), "Post");
         debugMethodCallEnd();
+    }
+
+
+    /**
+     * dsl: | let | label | type | expr | result |
+     * allows to associate a value to a label. values are extracted from the
+     * body of the last successful http response.
+     * example:
+     * <code> | let | id | body | /services/id[0]/text() | | <code/>
+     * <code> | GET | /services/%id% | 200 | | | <code/>
+     */
+    public void let() {
+        debugMethodCallStart();
+        if(row.size() != 5) {
+            getFormatter().exception(row.getCell(row.size() - 1), "Not all cells found: | let | label | type | expr | result |");
+            debugMethodCallEnd();
+            return;
+        }
+        String label = row.getCell(1).text().trim();
+        String type = row.getCell(2).text();
+        CellWrapper exprCell = row.getCell(3);
+        try {
+            exprCell.body(GLOBALS.substitute(exprCell.body()));
+            String expr = exprCell.text();
+            CellWrapper valueCell = row.getCell(4);
+            String valueCellText = valueCell.body();
+            String valueCellTextReplaced = GLOBALS.substitute(valueCellText);
+            valueCell.body(valueCellTextReplaced);
+            String sValue = null;
+            LetHandler letHandler = LetHandlerFactory.getHandlerFor(type);
+            if (letHandler !=null ) {
+                StringTypeAdapter adapter = new StringTypeAdapter();
+                try {
+                    sValue = letHandler.handle(this, getLastResponse(), namespaceContext, expr);
+                    exprCell.body(getFormatter().gray(exprCell.body()));
+                } catch (RuntimeException e) {
+                    getFormatter().exception(exprCell, e.getMessage());
+                    LOG.error("Exception occurred when processing cell=" + exprCell, e);
+                }
+                GLOBALS.put(label, sValue);
+                adapter.set(sValue);
+                getFormatter().check(valueCell, adapter);
+            } else {
+                getFormatter().exception(exprCell, "i don't know how to process the expression for '" + type + "'");
+            }
+
+        }
+        catch (RuntimeException e) {
+            getFormatter().exception(exprCell, e);
+        } finally {
+            debugMethodCallEnd();
+        }
     }
 
 

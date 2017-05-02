@@ -13,19 +13,8 @@ import java.util.List;
 public class XPathBodyTypeAdapter extends BodyTypeAdapter {
 
 
-/**
- * Equality check for bodies.
- *
- * Expected body is a {@code List<String>} of XPaths - as parsed by
- * {@link XPathBodyTypeAdapter#parse(String )} - to be executed in the
- * actual body. The check is true if all XPaths executed in the actual body
- * return a node list not null or empty.
- *
- * A special case is dedicated to {@code no-body}. If the expected body is
- * {@code no-body}, the equality check is true if the actual body returned
- * by the REST response is empty or null.
- */
- @Override
+
+     @Override
     public boolean equals(final Object expected, final Object actual) {
         if (checkNoBody(expected)) {
             return checkNoBody(actual);
@@ -52,7 +41,7 @@ public class XPathBodyTypeAdapter extends BodyTypeAdapter {
     protected boolean eval(String expr, String content) {
         Boolean b;
         try {
-            NodeList ret = Tools.extractXPath(getContext(), expr, content, XPathConstants.BOOLEAN, getCharset());
+            NodeList ret = Tools.extractXPath(getContext(), expr, content, getCharset());
             return !(ret == null || ret.getLength() == 0);
         } catch (IllegalArgumentException e) {
             b = (Boolean)Tools.extractXPath(getContext(), expr, content, XPathConstants.BOOLEAN, getCharset());

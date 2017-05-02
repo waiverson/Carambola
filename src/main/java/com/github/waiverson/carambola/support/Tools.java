@@ -4,32 +4,37 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import javax.xml.XMLConstants;
+import javax.xml.namespace.NamespaceContext;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.*;
+import java.io.*;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
  * Created by waiverson on 2016/8/2.
  */
+
+
 public class Tools {
 
     private Tools() {}
 
+
+    public static String convertEntryToString(String name, String value, String nvSep) {
+        return String.format("%s%s%s", name, nvSep,value);
+    }
 
     public static Map<String, String> convertStringToMap(final String expStr,
                                                          final String nvSep, final String entrySep, boolean cleanTags) {
@@ -275,6 +280,12 @@ public class Tools {
         return "<a href=" + href + ">" + text + "</a>";
     }
 
+
+    public static NodeList extractXPath(Map<String, String> ns, String xpathExpression, String content) {
+        return (NodeList)extractXPath(ns, xpathExpression, content, XPathConstants.NODESET, null);
+    }
+
+
     /**
      * extract the XPath from the content. the return value type is passed in
      * input using one of the {@link XPathConstants}. See also
@@ -330,6 +341,52 @@ public class Tools {
         }
     }
 
+    public static XPathExpression toExpression(Map<String, String> ns, String xpathExpression) {
+        try {
+            XPathFactory xPathFactory = XPathFactory.newInstance();
+            XPath xPath = xPathFactory.newXPath();
+            if (ns.size() > 0 ) {
+                xPath.setNamespaceContext(toNsContext(ns));
+            }
+            XPathExpression expr = xPath.compile(xpathExpression);
+            return expr;
+
+        }catch (XPathExpressionException e) {
+            throw new IllegalArgumentException("xPath expression can not be compiled: " + xpathExpression, e);
+        }
+
+    }
+
+    private static NamespaceContext toNsContext(final  Map<String, String> ns) {
+
+        NamespaceContext ctx = new NamespaceContext() {
+
+            @Override
+            public String getNamespaceURI(String prefix) {
+                String u = ns.get(prefix);
+                if (null == u) {
+                    return XMLConstants.NULL_NS_URI;
+                }
+                return u;
+            }
+
+            @Override
+            public String getPrefix(String namespaceURI) {
+                for (String k : ns.keySet()) {
+                    if (ns.get(k).equals(namespaceURI)) {
+                        return k;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public Iterator<?> getPrefixes(String namespaceURI) {return null;}
+        };
+
+        return ctx;
+    }
+
     public static InputStream getInputStreamFromString(String string, String encoding) {
         if (string == null) {
             throw new IllegalArgumentException("null input");
@@ -339,6 +396,25 @@ public class Tools {
             return new ByteArrayInputStream(byteArray);
         }catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException("unsupported encoding: " + encoding);
+        }
+    }
+
+    public static String xPathResultToXmlString(Object result) {
+
+        if (result == null) { return null; }
+        try {
+            StringWriter sw = new StringWriter();
+            Transformer serializer = TransformerFactory.newInstance().newTransformer();
+            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+            serializer.setOutputProperty(OutputKeys.MEDIA_TYPE, "text/xml");
+            if (result instanceof NodeList) {
+                serializer.transform(new DOMSource((NodeList)result.item(0)), new StreamResult(sw));
+            } else {
+                return result.toString();
+            }
+            return sw.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Transformation caused an exception", e);
         }
     }
 
