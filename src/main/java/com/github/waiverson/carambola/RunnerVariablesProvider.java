@@ -1,11 +1,16 @@
 package com.github.waiverson.carambola;
-
 import com.github.waiverson.carambola.support.Variables;
 
 /**
- * Created by waiverson on 16/11/25.
+ * The fixture provides the variables of the runner.
+ * This interface abstracts the fixture so that it can
+ * be tested easily.
  */
 public interface RunnerVariablesProvider {
 
-	Variables createRunnerVariables();
+    /**
+     * Get a variable store linked to the current runner environment.
+     */
+    Variables createRunnerVariables();
+
 }
