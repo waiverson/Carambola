@@ -1,6 +1,14 @@
 package com.github.waiverson.carambola.support;
 
 import org.w3c.dom.Document;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.copy.HierarchicalStreamCopier;
+import com.thoughtworks.xstream.io.json.JettisonMappedXmlDriver;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
@@ -19,23 +27,422 @@ import javax.xml.xpath.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * Created by waiverson on 2016/8/2.
+ * Misc tool methods for string/xml/xpath manipulation.
+ *
+ * @author xyc
+ *
  */
+public final class Tools {
 
+    private Tools() {
 
-public class Tools {
-
-    private Tools() {}
-
-
-    public static String convertEntryToString(String name, String value, String nvSep) {
-        return String.format("%s%s%s", name, nvSep,value);
     }
 
+    /**
+     * @param ns
+     *            the name space
+     * @param xpathExpression
+     *            the expression
+     * @param content
+     *            the content
+     * @return the list of nodes matching the supplied XPath.
+     */
+    public static NodeList extractXPath(Map<String, String> ns,
+                                        String xpathExpression, String content) {
+        return (NodeList) extractXPath(ns, xpathExpression, content,
+                XPathConstants.NODESET, null);
+    }
+
+    /**
+     *
+     * @param ns
+     * @param xpathExpression
+     * @param content
+     * @param encoding
+     * @return the list of nodes matching the supplied XPath.
+     */
+    public static NodeList extractXPath(Map<String, String> ns,
+                                        String xpathExpression, String content, String encoding) {
+        return (NodeList) extractXPath(ns, xpathExpression, content,
+                XPathConstants.NODESET, encoding);
+    }
+
+    /**
+     * @param xpathExpression
+     * @param content
+     * @param returnType
+     * @return the list of nodes matching the supplied XPath.
+     */
+    public static Object extractXPath(String xpathExpression, String content,
+                                      QName returnType) {
+        return extractXPath(xpathExpression, content, returnType, null);
+    }
+
+    /**
+     *
+     * @param xpathExpression
+     * @param content
+     * @param returnType
+     * @param encoding
+     * @return the list of nodes mathching the supplied XPath.
+     */
+    public static Object extractXPath(String xpathExpression, String content,
+                                      QName returnType, String encoding) {
+        // Use the java Xpath API to return a NodeList to the caller so they can
+        // iterate through
+        return extractXPath(new HashMap<String, String>(), xpathExpression,
+                content, returnType, encoding);
+    }
+
+    /**
+     *
+     * @param ns
+     * @param xpathExpression
+     * @param content
+     * @param returnType
+     * @return the list of nodes mathching the supplied XPath.
+     */
+    public static Object extractXPath(Map<String, String> ns,
+                                      String xpathExpression, String content, QName returnType) {
+        return extractXPath(ns, xpathExpression, content, returnType, null);
+    }
+
+    /**
+     * extract the XPath from the content. the return value type is passed in
+     * input using one of the {@link XPathConstants}. See also
+     * {@link XPathExpression#evaluate(Object item, QName returnType)} ;
+     *
+     * @param ns
+     * @param xpathExpression
+     * @param content
+     * @param returnType
+     * @param charset
+     * @return the result
+     */
+    public static Object extractXPath(Map<String, String> ns,
+                                      String xpathExpression, String content, QName returnType,
+                                      String charset) {
+        if (null == ns) {
+            ns = new HashMap<String, String>();
+        }
+        String ch = charset;
+        if (ch == null) {
+            ch = Charset.defaultCharset().name();
+        }
+        Document doc = toDocument(content, charset);
+        XPathExpression expr = toExpression(ns, xpathExpression);
+        try {
+            Object o = expr.evaluate(doc, returnType);
+            return o;
+        } catch (XPathExpressionException e) {
+            throw new IllegalArgumentException(
+                    "xPath expression cannot be executed: " + xpathExpression);
+        }
+    }
+
+    /**
+     * @param result
+     * @return the serialised as xml result of an xpath expression evaluation
+     */
+    public static String xPathResultToXmlString(Object result) {
+        if (result == null) {
+            return null;
+        }
+        try {
+            StringWriter sw = new StringWriter();
+            Transformer serializer = TransformerFactory.newInstance()
+                    .newTransformer();
+            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+            serializer.setOutputProperty(OutputKeys.MEDIA_TYPE, "text/xml");
+            if (result instanceof NodeList) {
+                serializer.transform(
+                        new DOMSource(((NodeList) result).item(0)),
+                        new StreamResult(sw));
+            } else if (result instanceof Node) {
+                serializer.transform(new DOMSource((Node) result),
+                        new StreamResult(sw));
+            } else {
+                return result.toString();
+            }
+            return sw.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Transformation caused an exception", e);
+        }
+    }
+
+    /**
+     * @param ns
+     * @param xpathExpression
+     * @return true if the expression is valid
+     */
+    public static boolean isValidXPath(Map<String, String> ns,
+                                       String xpathExpression) {
+        try {
+            toExpression(ns, xpathExpression);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param ns
+     * @param xpathExpression
+     * @return the parsed string as {@link XPathExpression}
+     */
+    public static XPathExpression toExpression(Map<String, String> ns,
+                                               String xpathExpression) {
+        try {
+            XPathFactory xpathFactory = XPathFactory.newInstance();
+            XPath xpath = xpathFactory.newXPath();
+            if (ns.size() > 0) {
+                xpath.setNamespaceContext(toNsContext(ns));
+            }
+            XPathExpression expr = xpath.compile(xpathExpression);
+            return expr;
+        } catch (XPathExpressionException e) {
+            throw new IllegalArgumentException(
+                    "xPath expression can not be compiled: " + xpathExpression,
+                    e);
+        }
+    }
+
+    private static NamespaceContext toNsContext(final Map<String, String> ns) {
+        NamespaceContext ctx = new NamespaceContext() {
+
+            @Override
+            public String getNamespaceURI(String prefix) {
+                String u = ns.get(prefix);
+                if (null == u) {
+                    return XMLConstants.NULL_NS_URI;
+                }
+                return u;
+            }
+
+            @Override
+            public String getPrefix(String namespaceURI) {
+                for (String k : ns.keySet()) {
+                    if (ns.get(k).equals(namespaceURI)) {
+                        return k;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public Iterator<?> getPrefixes(String namespaceURI) {
+                return null;
+            }
+
+        };
+        return ctx;
+    }
+
+    private static Document toDocument(String content, String charset) {
+        String ch = charset;
+        if (ch == null) {
+            ch = Charset.defaultCharset().name();
+        }
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        try {
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(getInputStreamFromString(content, ch));
+            return doc;
+        } catch (ParserConfigurationException e) {
+            throw new IllegalArgumentException(
+                    "parser for last response body caused an error", e);
+        } catch (SAXException e) {
+            throw new IllegalArgumentException(
+                    "last response body cannot be parsed", e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    "IO Exception when reading the document", e);
+        }
+    }
+
+    /**
+     * this method uses @link {@link JSONObject} to parse the string and return
+     * true if parse succeeds.
+     *
+     * @param presumeblyJson
+     *            string with some json (possibly).
+     * @return true if json is valid
+     */
+    public static boolean isValidJson(String presumeblyJson) {
+        Object o = null;
+        try {
+            o = new JSONObject(presumeblyJson);
+        } catch (JSONException e) {
+            return false;
+        }
+        return o != null;
+    }
+
+    /**
+     * @param json
+     *            the json string
+     * @return the string as xml.
+     */
+    public static String fromJSONtoXML(String json) {
+        HierarchicalStreamDriver driver = new JettisonMappedXmlDriver();
+        StringReader reader = new StringReader(json);
+        HierarchicalStreamReader hsr = driver.createReader(reader);
+        StringWriter writer = new StringWriter();
+        try {
+            new HierarchicalStreamCopier().copy(hsr, new PrettyPrintWriter(
+                    writer));
+            return writer.toString();
+        } finally {
+            if (writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+    }
+
+    /**
+     * Yet another stream 2 string function.
+     *
+     * @param is
+     *            the stream
+     * @return the string.
+     */
+    public static String getStringFromInputStream(InputStream is) {
+        return getStringFromInputStream(is, Charset.defaultCharset().name());
+    }
+
+    /**
+     * Yet another stream 2 string function.
+     *
+     * @param is
+     *            the stream
+     * @param encoding
+     *            the encoding of the bytes in the stream
+     * @return the string.
+     */
+    public static String getStringFromInputStream(InputStream is,
+                                                  String encoding) {
+        String line = null;
+        if (is == null) {
+            return "";
+        }
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(is, encoding));
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Unsupported encoding: "
+                    + encoding, e);
+        }
+        StringBuilder sb = new StringBuilder();
+        try {
+            while ((line = in.readLine()) != null) {
+                sb.append(line);
+            }
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to read from stream", e);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Yet another stream 2 string function.
+     *
+     * @param string
+     *            the string
+     * @param encoding
+     *            the encoding of the bytes in the stream
+     * @return the input stream.
+     */
+    public static InputStream getInputStreamFromString(String string,
+                                                       String encoding) {
+        if (string == null) {
+            throw new IllegalArgumentException("null input");
+        }
+        try {
+            byte[] byteArray = string.getBytes(encoding);
+            return new ByteArrayInputStream(byteArray);
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Unsupported encoding: "
+                    + encoding);
+        }
+    }
+
+    /**
+     * converts a map to string
+     *
+     * @param map
+     *            the map to convert
+     * @param nvSep
+     *            the nvp separator
+     * @param entrySep
+     *            the separator of each entry
+     * @return the serialised map.
+     */
+    public static String convertMapToString(Map<String, String> map,
+                                            String nvSep, String entrySep) {
+        StringBuffer sb = new StringBuffer();
+        if (map != null) {
+            for (Entry<String, String> entry : map.entrySet()) {
+                String el = entry.getKey();
+                sb.append(convertEntryToString(el, map.get(el), nvSep)).append(
+                        entrySep);
+            }
+        }
+        String repr = sb.toString();
+        int pos = repr.lastIndexOf(entrySep);
+        return repr.substring(0, pos);
+    }
+
+    /**
+     * @param name
+     *            the name
+     * @param value
+     *            the value
+     * @param nvSep
+     *            the separator
+     * @return the kvp as a string <code>&lt;name>&lt;sep>&lt;value></code>.
+     */
+    public static String convertEntryToString(String name, String value, String nvSep) {
+        return String.format("%s%s%s", name, nvSep, value);
+    }
+
+    /**
+     * @param text the text
+     * @param expr the regex
+     * @return true if regex matches text.
+     */
+    public static boolean regex(String text, String expr) {
+        try {
+            Pattern p = Pattern.compile(expr);
+            boolean find = p.matcher(text).find();
+            return find;
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException("Invalid regex " + expr);
+        }
+    }
+
+    /**
+     * parses a map from a string.
+     *
+     * @param expStr
+     *            the string with the serialised map.
+     * @param nvSep
+     *            the separator for keys and values.
+     * @param entrySep
+     *            the separator for entries in the map.
+     * @param cleanTags
+     *            if true the value is cleaned from any present html tag.
+     * @return the parsed map.
+     */
     public static Map<String, String> convertStringToMap(final String expStr,
                                                          final String nvSep, final String entrySep, boolean cleanTags) {
         String sanitisedExpStr = expStr.trim();
@@ -58,79 +465,45 @@ public class Tools {
                 v = "";
                 if (nvpArr.length == 2) {
                     v = nvpArr[1].trim();
-                }
-                else if (nvpArr.length > 2) {
+                } else if (nvpArr.length > 2) {
                     int pos = nvp.indexOf(nvSep) + nvSep.length();
                     v = nvp.substring(pos).trim();
                 }
                 if (cleanTags) {
                     ret.put(k, fromSimpleTag(v));
-                }
-                else {
+                } else {
                     ret.put(k, v);
                 }
-            }
-            catch (RuntimeException e) {
+            } catch (RuntimeException e) {
                 throw new IllegalArgumentException(
                         "Each entry in the must be separated by '"
                                 + entrySep
                                 + "' and each entry must be expressed as a name"
-                                + nvSep + "value"
-                );
+                                + nvSep + "value");
             }
         }
         return ret;
     }
 
     /**
-     * @param somethingWithinATag
-     *            some text enclosed in some html tag.
-     * @return the text within the tag.
+     * @param message
+     *            the message to be included in the collapsable section header.
+     * @param content
+     *            the content collapsed.
+     * @return a string with the html/js code to implement a collapsable section
+     *         in fitnesse.
      */
-    public static String fromSimpleTag(String somethingWithinATag) {
-        return somethingWithinATag.replaceAll("<[^>]+>", "").replace("<[^>]+>", "");
-    }
-
-    private static String removeCloseEscape(String str) {
-        return trimStartEnd("-!", str);
-    }
-
-    private static String removeOpenEscape(String str) {
-        return trimStartEnd("!-", str);
-    }
-
-    private static String trimStartEnd(String pattern, String str) {
-        if (str.startsWith(pattern)) {
-            str = str.substring(2);
-        }
-        if (str.endsWith(pattern)) {
-            str = str.substring(0, str.length() - 2);
-        }
-        return str;
-    }
-
-    public static String fromHtml(String text) {
-        String ls = "\n";
-        return text.replaceAll("<br[\\s]*/>", ls).replaceAll("<BR[\\s]*/>", ls)
-                .replaceAll("<span[^>]*>", "").replaceAll("</span>", "")
-                .replaceAll("<pre>", "").replaceAll("</pre>", "")
-                .replaceAll("&nbsp;", " ").replaceAll("&gt;", ">")
-                .replaceAll("&amp;", "&").replaceAll("&lt;", "<")
-                .replaceAll("&nbsp;", " ");
-    }
-
-    public static boolean regex(String text, String expr) {
-        try {
-            Pattern p = Pattern.compile(expr);
-            boolean find = p.matcher(text).find();
-            return find;
-        } catch (PatternSyntaxException e) {
-            throw new IllegalArgumentException("Invaild regex " +expr);
-        }
-    }
-
-    public static String wrapInDiv(String body) {
-        return String.format("<div>%s</div>", body);
+    public static String makeToggleCollapseable(String message, String content) {
+        Random random = new Random();
+        String id = Integer.toString(content.hashCode())
+                + Long.toString(random.nextLong());
+        StringBuffer sb = new StringBuffer();
+        sb.append("<a href=\"javascript:toggleCollapsable('" + id + "');\">");
+        sb.append("<img src='/files/images/collapsableClosed.gif' class='left' id='img"
+                + id + "'/>" + message + "</a>");
+        sb.append("<div class='hidden' id='" + id + "'>").append(content)
+                .append("</div>");
+        return sb.toString();
     }
 
     /**
@@ -164,11 +537,47 @@ public class Tools {
     }
 
     /**
+     * @param somethingWithinATag
+     *            some text enclosed in some html tag.
+     * @return the text within the tag.
+     */
+    public static String fromSimpleTag(String somethingWithinATag) {
+        return somethingWithinATag.replaceAll("<[^>]+>", "").replace(
+                "</[^>]+>", "");
+    }
+
+    /**
+     * @param text some html
+     * @return the text stripped out of all tags.
+     *
+     */
+    public static String fromHtml(String text) {
+        String ls = "\n";
+        return text.replaceAll("<br[\\s]*/>", ls).replaceAll("<BR[\\s]*/>", ls)
+                .replaceAll("<span[^>]*>", "").replaceAll("</span>", "")
+                .replaceAll("<pre>", "").replaceAll("</pre>", "")
+                .replaceAll("&nbsp;", " ").replaceAll("&gt;", ">")
+                .replaceAll("&amp;", "&").replaceAll("&lt;", "<")
+                .replaceAll("&nbsp;", " ");
+    }
+
+    /**
      * @param string a string
-     * @return the string htmlified as a dsl label.
+     * @return the string htmlified as a fitnesse label.
      */
     public static String toHtmlLabel(String string) {
-        return "<i><span class='dsl_label'>" + string + "</span></i>";
+        return "<i><span class='fit_label'>" + string + "</span></i>";
+    }
+
+    /**
+     * @param href
+     *            a string ending up in the anchor href.
+     * @param text
+     *            a string within anchors.
+     * @return the string htmlified as a html link.
+     */
+    public static String toHtmlLink(String href, String text) {
+        return "<a href='" + href + "'>" + text + "</a>";
     }
 
     /**
@@ -248,174 +657,26 @@ public class Tools {
         return sb.toString();
     }
 
-    /**
-     * @param message
-     *            the message to be included in the collapsable section header.
-     * @param content
-     *            the content collapsed.
-     * @return a string with the html/js code to implement a collapsable section
-     *         in fitnesse.
-     */
-    public static String makeToggleCollapseable(String message, String content) {
-        Random random = new Random();
-        String id = Integer.toString(content.hashCode())
-                + Long.toString(random.nextLong());
-        StringBuffer sb = new StringBuffer();
-        sb.append("<a href=\"javascript:toggleCollapsable('" + id + "');\">");
-        sb.append("<img src='/files/images/collapsableClosed.gif' class='left' id='img"
-                + id + "'/>" + message + "</a>");
-        sb.append("<div class='hidden' id='" + id + "'>").append(content)
-                .append("</div>");
-        return sb.toString();
+    private static String removeCloseEscape(String str) {
+        return trimStartEnd("-!", str);
     }
 
-    /**
-     * @param href
-     *            a string ending up in the anchor href.
-     * @param text
-     *            a string within anchors.
-     * @return the string htmlified as a html link.
-     */
-    public static String toHtmlLink(String href, String text) {
-        return "<a href=" + href + ">" + text + "</a>";
+    private static String removeOpenEscape(String str) {
+        return trimStartEnd("!-", str);
     }
 
-
-    public static NodeList extractXPath(Map<String, String> ns, String xpathExpression, String content) {
-        return (NodeList)extractXPath(ns, xpathExpression, content, XPathConstants.NODESET, null);
+    private static String trimStartEnd(String pattern, String str) {
+        if (str.startsWith(pattern)) {
+            str = str.substring(2);
+        }
+        if (str.endsWith(pattern)) {
+            str = str.substring(0, str.length() - 2);
+        }
+        return str;
     }
 
-
-    /**
-     * extract the XPath from the content. the return value type is passed in
-     * input using one of the {@link XPathConstants}. See also
-     * {@link XPathExpression#evaluate(Object item, QName returnType)} ;
-     *
-     * @param ns
-     * @param xpathExpression
-     * @param content
-     * @param returnType
-     * @param charset
-     * @return the result
-     */
-    public static Object extractXPath(Map<String, String> ns, String xpathExpression, String content,
-                                      QName returnType, String charset) {
-        if (null == ns) {
-            ns = new HashMap<String, String>();
-        }
-        String ch = charset;
-        if (ch == null) {
-            ch = Charset.defaultCharset().name();
-        }
-        Document doc = toDocument(content, charset);
-        XPathExpression expr = toExpression(ns, xpathExpression);
-        try {
-            Object o = expr.evaluate(doc, returnType);
-            return o;
-        } catch (XPathExpressionException e) {
-            throw new IllegalArgumentException("xPath expression cannot be executed: "
-                    + xpathExpression);
-        }
-    }
-
-    private static Document toDocument(String content, String charset) {
-        String ch = charset;
-        if (ch == null) {
-            ch = Charset.defaultCharset().name();
-        }
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        try {
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(getInputStreamFromString(content, ch));
-            return doc;
-        } catch (ParserConfigurationException e) {
-            throw new IllegalArgumentException(
-                    "parser for last response body caused an error", e);
-        } catch (SAXException e) {
-            throw new IllegalArgumentException(
-                    "last response body cannot be parsed", e);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(
-                    "IO Exception when reading the document", e);
-        }
-    }
-
-    public static XPathExpression toExpression(Map<String, String> ns, String xpathExpression) {
-        try {
-            XPathFactory xPathFactory = XPathFactory.newInstance();
-            XPath xPath = xPathFactory.newXPath();
-            if (ns.size() > 0 ) {
-                xPath.setNamespaceContext(toNsContext(ns));
-            }
-            XPathExpression expr = xPath.compile(xpathExpression);
-            return expr;
-
-        }catch (XPathExpressionException e) {
-            throw new IllegalArgumentException("xPath expression can not be compiled: " + xpathExpression, e);
-        }
-
-    }
-
-    private static NamespaceContext toNsContext(final  Map<String, String> ns) {
-
-        NamespaceContext ctx = new NamespaceContext() {
-
-            @Override
-            public String getNamespaceURI(String prefix) {
-                String u = ns.get(prefix);
-                if (null == u) {
-                    return XMLConstants.NULL_NS_URI;
-                }
-                return u;
-            }
-
-            @Override
-            public String getPrefix(String namespaceURI) {
-                for (String k : ns.keySet()) {
-                    if (ns.get(k).equals(namespaceURI)) {
-                        return k;
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public Iterator<?> getPrefixes(String namespaceURI) {return null;}
-        };
-
-        return ctx;
-    }
-
-    public static InputStream getInputStreamFromString(String string, String encoding) {
-        if (string == null) {
-            throw new IllegalArgumentException("null input");
-        }
-        try {
-            byte[] byteArray = string.getBytes(encoding);
-            return new ByteArrayInputStream(byteArray);
-        }catch (UnsupportedEncodingException e) {
-            throw new IllegalArgumentException("unsupported encoding: " + encoding);
-        }
-    }
-
-    public static String xPathResultToXmlString(Object result) {
-
-        if (result == null) { return null; }
-        try {
-            StringWriter sw = new StringWriter();
-            Transformer serializer = TransformerFactory.newInstance().newTransformer();
-            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
-            serializer.setOutputProperty(OutputKeys.MEDIA_TYPE, "text/xml");
-            if (result instanceof NodeList) {
-                serializer.transform(new DOMSource((NodeList)result.item(0)), new StreamResult(sw));
-            } else {
-                return result.toString();
-            }
-            return sw.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("Transformation caused an exception", e);
-        }
+    public static String wrapInDiv(String body) {
+        return String.format("<div>%s</div>", body);
     }
 
 }

@@ -3,35 +3,46 @@ package com.github.waiverson.carambola.support;
 import com.github.waiverson.carambola.StatementExecutorInterface;
 
 /**
- * Created by xyc on 2016/8/3.
+ * Facade to FitNesse global symbols map for SliM.
+ *
+ * @author xyc
  */
-
-public class DslVariables extends Variables{
+public class DslVariables extends Variables {
 
     private final StatementExecutorInterface executor;
 
     /**
      * initialises the variables. reade
-     * {@code Carambola.null.value.representation} to know how to render
+     * {@code restfixture.null.value.representation} to know how to render
      * {@code null}s.
      *
      * @param c
      * @param executor
      */
-
-    public DslVariables() { super(); }
-
     public DslVariables(Config c, StatementExecutorInterface executor) {
         super(c);
         this.executor = executor;
     }
 
+    /**
+     * puts a value.
+     *
+     * @param label
+     * @param val
+     */
     public void put(String label, String val) {
         executor.assign(label, val);
     }
 
+    /**
+     * gets a value.
+     *
+     * @param label
+     * @return the value.
+     */
     public String get(String label) {
         String result = executor.getSymbol(label).toString();
         return result;
     }
+
 }

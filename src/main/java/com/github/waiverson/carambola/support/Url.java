@@ -4,35 +4,66 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
- * Created by waievrson on 2016/8/4.
+ * Facade to {@link java.net.URL}. Just to offer a REST oriented interface.
+ *
+ * @author xyc
+ *
  */
 public class Url {
 
     private URL baseUrl;
 
+    /**
+     * @param url
+     *            the string representation of url.
+     */
     public Url(String url) {
         try {
             if (url == null || "".equals(url.trim())) {
-            throw new IllegalArgumentException("Null or empty input: " + url);
-        }
+                throw new IllegalArgumentException("Null or empty input: "
+                        + url);
+            }
             String u = url;
             if (url.endsWith("/")) {
-                u = url.substring(0, u.length()-1);
+                u = url.substring(0, u.length() - 1);
             }
             baseUrl = new URL(u);
-            if("".equals((baseUrl.getHost()))) {
-                throw new IllegalArgumentException("No Host specified in base URL: " + url);
+            if ("".equals(baseUrl.getHost())) {
+                throw new IllegalArgumentException(
+                        "No host specified in base URL: " + url);
             }
-        }
-        catch (MalformedURLException e) {
+        } catch (MalformedURLException e) {
             throw new IllegalArgumentException("Malformed base URL: " + url, e);
         }
     }
 
+    /**
+     * @return the base url
+     */
     public URL getUrl() {
         return baseUrl;
     }
 
+    @Override
+    public String toString() {
+        return getUrl().toExternalForm();
+    }
+
+    /**
+     * @return the resource
+     */
+    public String getResource() {
+        String res = getUrl().getPath().trim();
+        if (res.isEmpty()) {
+            return "/";
+        }
+        return res;
+    }
+
+    /**
+     *
+     * @return the base url.
+     */
     public String getBaseUrl() {
         String path = getResource().trim();
         if (path.length() == 0 || path.equals("/")) {
@@ -46,15 +77,19 @@ public class Url {
         }
     }
 
-    public String getResource() {
-        String res = getUrl().getPath().trim();
-        if (res.isEmpty()) {
-            return "/";
+    /**
+     * builds a url
+     *
+     * @param file
+     *            the file
+     * @return the full url.
+     */
+    public URL buildURL(String file) {
+        try {
+            return new URL(baseUrl, file);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException("Invalid URL part: " + file);
         }
-        return res;
     }
-
-
-
 
 }
