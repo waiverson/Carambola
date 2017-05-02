@@ -18,6 +18,9 @@ public class DslVariables extends Variables{
      * @param c
      * @param executor
      */
+
+    public DslVariables() { super(); }
+
     public DslVariables(Config c, StatementExecutorInterface executor) {
         super(c);
         this.executor = executor;

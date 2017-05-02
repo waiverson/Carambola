@@ -5,19 +5,44 @@ package com.github.waiverson.carambola.support;
  */
 public interface CellFormatter<E> {
 
+    /**
+     * formats a cell containing an exception.
+     *
+     * @param cellWrapper
+     *            the cell wrapper
+     * @param exception
+     *            the excteption to render.
+     */
     void exception(CellWrapper<E> cellWrapper, Throwable exception);
 
+    /**
+     * formats a cell containing an exception.
+     *
+     * @param cellWrapper
+     *            the cell wrapper
+     * @param exceptionMessage
+     *            the exception message to render.
+     */
     void exception(CellWrapper<E> cellWrapper, String exceptionMessage);
 
+    /**
+     * formats a check cell.
+     *
+     * @param valueCell
+     *            the cell value.
+     * @param adapter
+     *            the adapter interpreting the value.
+     */
     void check(CellWrapper<E> valueCell, RestDataTypeAdapter adapter);
 
+    /**
+     * formats a cell label
+     *
+     * @param string
+     *            the label
+     * @return the cell content as a label.
+     */
     String label(String string);
-
-    void setDisplayActual(boolean displayActual);
-
-    void setDisplayAbsoluteURLInFull(boolean displayAbsoluteURLInFull);
-
-    void setMinLengthForToggleCollapse(int minLength);
 
     /**
      * formats a cell representing a wrong expectation.
@@ -64,6 +89,30 @@ public interface CellFormatter<E> {
     void asLink(CellWrapper<E> cell, String resolvedUrl, String link, String text);
 
     /**
+     * sets whether the cell should display the actual value after evaluation.
+     *
+     * @param displayActual
+     *            true if actual value has to be rendered.
+     */
+    void setDisplayActual(boolean displayActual);
+
+    /**
+     * sets whether absolute urls are displayed in full
+     *
+     * @param displayAbsoluteURLInFull
+     */
+    void setDisplayAbsoluteURLInFull(boolean displayAbsoluteURLInFull);
+
+    /**
+     * renders the cell as a toggle area if the content of the cell is over the
+     * min value set here.
+     *
+     * @param minLen
+     *            the min value of the content of a cell.
+     */
+    void setMinLengthForToggleCollapse(int minLen);
+
+    /**
      * @return true if actual values are rendered.
      */
     boolean isDisplayActual();
@@ -76,4 +125,5 @@ public interface CellFormatter<E> {
      * @return the cleaned text
      */
     String fromRaw(String text);
+
 }

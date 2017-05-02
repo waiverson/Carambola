@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by waiverson on 2016/8/17.
+ * Created by xyc on 2016/8/17.
  */
 public class BodyTypeAdapterFactory {
 
@@ -52,7 +52,7 @@ public class BodyTypeAdapterFactory {
     public BodyTypeAdapter getBodyTypeAdapter(ContentType content, String charset) {
         final BodyTypeAdapterCreator creator = contentTypeToBodyTypeAdapter.get(content);
         if (creator == null) {
-            throw new IllegalArgumentException("Content-Type is UNKNOWN. Umable to find a BodyTypeAdapter to instantiate");
+            throw new IllegalArgumentException("Content-Type is UNKNOWN. Unable to find a BodyTypeAdapter to instantiate");
         }
         final BodyTypeAdapter instance = creator.createBodyTypeAdapter();
         if (charset != null) {
